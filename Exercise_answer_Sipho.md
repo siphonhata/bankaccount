@@ -137,3 +137,7 @@ iex> {:ok, pid} = BankAccount.start_link(500)
 iex> BankAccount.withdraw(pid, 600)
 {:error, "Insufficient funds"}
 ```
+
+## 6. Writing Tests for Concurrency
+
+- Check the Unit test on the project test/bank_account_test file.
