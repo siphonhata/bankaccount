@@ -125,3 +125,15 @@ iex> task_with = Enum.map(1..5, fn _ -> spawn(fn -> BankAccount.withdraw(pid, 50
 iex> BankAccount.balance(pid)  
 1250
 ```
+
+## 5. Error handling
+
+```sh
+iex> {:ok, pid} = BankAccount.start_link(500)
+{:ok, #PID<0.197.0>}
+```
+
+```sh
+iex> BankAccount.withdraw(pid, 600)
+{:error, "Insufficient funds"}
+```
