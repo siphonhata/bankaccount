@@ -9,7 +9,7 @@ defmodule BankAccount do
 
   @doc """
 
-  Function to initialise the bank balance and create a process.
+  Function to initialise the bank balance and create a process. Abuti Small
 
   ## Examples
 
