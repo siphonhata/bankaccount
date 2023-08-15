@@ -103,3 +103,25 @@ iex> Enum.each(task, &Task.await/1)
 iex> BankAccount.balance(pid)
 500
 ```
+
+## 4. Mixed Concurrent Deposits and Withdrawals
+
+```sh
+iex> {:ok, pid} = BankAccount.start_link(1000)
+{:ok, #PID<0.161.0>}
+```
+
+```sh
+iex> task_dep = Enum.map(1..5, fn _ -> spawn(fn -> BankAccount.deposit(pid, 100) end) end)
+[#PID<0.177.0>, #PID<0.178.0>, #PID<0.179.0>, #PID<0.180.0>, #PID<0.181.0>]
+```
+
+```sh
+iex> task_with = Enum.map(1..5, fn _ -> spawn(fn -> BankAccount.withdraw(pid, 50) end) end)
+[#PID<0.182.0>, #PID<0.183.0>, #PID<0.184.0>, #PID<0.185.0>, #PID<0.186.0>]
+```
+
+```sh
+iex> BankAccount.balance(pid)  
+1250
+```
