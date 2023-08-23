@@ -1,95 +1,90 @@
 defmodule BankAccount do
-#
+
+  require Logger
   use GenServer
 
-  @moduledoc """
-  This is a bank account module, can perfom functions like Deposit, withdraw and view balance.
-  """
-
-
-  @doc """
-
-  Function to initialise the bank balance and create a process.
-
-  ## Examples
-
-      iex> pid = BankAccount.start_link
-      {:ok, #PID<0.199.0>}
-
-  """
-  def start_link(initial_balance) do
-    GenServer.start_link(__MODULE__, initial_balance)
+  def start_link(acc_num, initial_balance \\ 0) when is_number(initial_balance) and initial_balance >= 0 do
+    result = GenServer.start_link(__MODULE__, initial_balance, name: spec_proc(acc_num))
+    result
   end
 
- @doc """
-
-  Function to deposit the amount into the bank.
-
-  ## Examples
-
-      iex> pid = BankAccount.start_link
-      {:ok, #PID<0.199.0>}
-      iex> BankAccount.deposit(pid, 120)
-      :ok
-
-  """
-  def deposit(pid, amount) do
-    GenServer.cast(pid, {:deposit, amount})
+  def balance(acc_num) do
+    acc_num
+    |> spec_proc()
+    |> GenServer.call( {:balance,acc_num})
   end
 
-  @doc """
-
-  Function to withdraw the amount into the bank.
-
-  ## Examples
-
-      iex> pid = BankAccount.start_link
-      {:ok, #PID<0.199.0>}
-      iex> BankAccount.withdraw(pid, 120)
-      {:error, "Insufficient funds"}
-
-  """
-  def withdraw(pid, amount) do
-    GenServer.call(pid, {:withdraw, amount})
+  def deposit(acc_num,amount) when is_number(amount) and amount > 0 do
+    Logger.info("\nDeposit of R#{amount} requested.")
+    acc_num
+    |> spec_proc()
+    GenServer.cast(:bank_account, {:deposit, amount, acc_num})
   end
 
-
-    @doc """
-
-  Function to check  the balance amount.
-
-  ## Examples
-
-      iex> pid = BankAccount.start_link
-      {:ok, #PID<0.199.0>}
-      iex> BankAccount.balance(pid, 120)
-      0
-
-  """
-  def balance(pid) do
-    GenServer.call(pid, :balance)
+  def withdraw(acc_num, amount) when is_number(amount) do
+    Logger.info("Amount withdrawed R#{amount}.")
+    acc_num
+    |> spec_proc()
+    |> GenServer.call( {:withdraw, amount,acc_num})
   end
 
+  # def transfer(from_account, to_account, amount) do
+  #   case BankAccount.withdraw(from_account, amount) do
+  #     {:ok, _} ->
+  #     case BankAccount.deposit(to_account, amount) do
+  #       {:ok, _reason} -> {:ok, "Transfer successful"}
+  #       error -> error
+  #     end
+  #     {:error, _reason} -> {:error, "Insufficient funds"}
+  #   end
+  # end
+
+  def transfer(from_account, to_account, amount) do
+    from_pid = :global.whereis_name({BankRegistry, from_account})
+    to_pid = :global.whereis_name({BankRegistry, to_account})
+    # Perform transaction logic here, ensuring atomicity
+    case BankAccount.withdraw(from_account, amount) do
+      {:ok, _} ->
+      case BankAccount.deposit(to_account, amount) do
+        {:ok, _reason} -> {:ok, "Transfer successful"}
+        error -> error
+      end
+      {:error, _reason} -> {:error, "Insufficient funds"}
+    end
+  end
   # Callbacks
+  #----------------------------------------------------------------------------------------
 
-  def handle_call({:withdraw, amount}, _from, balance) when balance >= amount do
-    {:reply, {:ok, balance - amount}, balance - amount}
+  def handle_call({:withdraw, amount, acc_num}, _from, balance) when balance >= amount do
+    new_balance = balance - amount
+    Logger.info("Withdrawal of R#{amount} made. New balance: R#{new_balance} From this account #{acc_num}")
+    {:reply, {:ok, new_balance}, new_balance}
   end
 
-  def handle_call({:withdraw, _amount}, _from, balance) do
+  def handle_call({:withdraw, _amount, _acc_num}, _from, balance) do
+    Logger.warning("Withdrawal failed due to insufficient funds.")
     {:reply, {:error, "Insufficient funds"}, balance}
   end
 
-  def handle_call(:balance, _from, balance) do
-    {:reply, balance, balance}
+  def handle_call({:balance, acc_num}, _from, bal) do
+    #Logger.info("Account number: #{acc_num}")
+    Logger.info("Balance: #{bal}")
+    {:reply, bal, acc_num}
   end
 
-  def handle_cast({:deposit, amount}, balance) do
-    {:noreply, balance + amount}
+  def handle_cast({:deposit, amount, acc_num}, balance) do
+    new_balance = balance + amount
+    IO.puts "Balance is R#{new_balance}"
+    Logger.info("\nAccount number: #{acc_num}.\nDeposit of R#{amount} made.\n New balance: R#{new_balance}.")
+    {:noreply, new_balance}
   end
 
   def init(initial_balance) do
+    Logger.info("\nBank Account created.\nInitial balance: R#{initial_balance}")
     {:ok, initial_balance}
   end
 
+  def spec_proc(acc_num) do
+    {:via, Registry, {BankRegistry, acc_num}}
+  end
 end
