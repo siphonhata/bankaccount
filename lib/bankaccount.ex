@@ -28,21 +28,7 @@ defmodule BankAccount do
     |> GenServer.call( {:withdraw, amount,acc_num})
   end
 
-  # def transfer(from_account, to_account, amount) do
-  #   case BankAccount.withdraw(from_account, amount) do
-  #     {:ok, _} ->
-  #     case BankAccount.deposit(to_account, amount) do
-  #       {:ok, _reason} -> {:ok, "Transfer successful"}
-  #       error -> error
-  #     end
-  #     {:error, _reason} -> {:error, "Insufficient funds"}
-  #   end
-  # end
-
   def transfer(from_account, to_account, amount) do
-    from_pid = :global.whereis_name({BankRegistry, from_account})
-    to_pid = :global.whereis_name({BankRegistry, to_account})
-    # Perform transaction logic here, ensuring atomicity
     case BankAccount.withdraw(from_account, amount) do
       {:ok, _} ->
       case BankAccount.deposit(to_account, amount) do
@@ -52,6 +38,8 @@ defmodule BankAccount do
       {:error, _reason} -> {:error, "Insufficient funds"}
     end
   end
+
+
   # Callbacks
   #----------------------------------------------------------------------------------------
 
