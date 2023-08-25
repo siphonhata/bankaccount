@@ -22,7 +22,7 @@ defmodule BankAccount do
     |> GenServer.cast({:deposit, amount, acc_num})
   end
 
-  def withdraw(acc_num, amount) when is_number(amount) do
+  def withdraw(acc_num, amount) when is_number(amount) and amount > 0 do
     Logger.info("Request to withdraw R#{amount}, from #{acc_num} recieved.")
     acc_num
     |> spec_proc()
@@ -40,14 +40,11 @@ defmodule BankAccount do
     end
   end
 
-  def transaction_history(acc_num) do
+  def transaction_history(acc_num, filters \\ %{}) do
     acc_num
     |> spec_proc()
     |> GenServer.call(:transaction_history)
-#     |> Map.from_struct()
-#     |> Enum.each( fn transaction ->
-#   IO.puts("Type: #{transaction.type}, Amount: #{transaction.amount}, Date: #{transaction.date}, Description: #{transaction.description}")
-# end)
+
    end
   # Callbacks
   #----------------------------------------------------------------------------------------
